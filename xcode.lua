@@ -9,9 +9,9 @@
 	p.modules.xcode = {}
 
 	local m = p.modules.xcode
+	m._VERSION = p._VERSION
 	m.elements = {}
 
-	include("_preload.lua")
 	include("xcode_common.lua")
 	include("xcode4_workspace.lua")
 	include("xcode_project.lua")
