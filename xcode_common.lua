@@ -7,7 +7,7 @@
 	local p = premake
 	local xcode = p.modules.xcode
 	local tree  = p.tree
-    local solution = p.solution
+    local workspace = p.workspace
 	local project = p.project
     local config = p.config
 	local fileconfig = p.fileconfig
@@ -116,7 +116,7 @@
 			[".m"]         = "sourcecode.c.objc",
 			[".mm"]        = "sourcecode.cpp.objc",
 			[".nib"]       = "wrapper.nib",
-			[".storyboard"] = "file.storyboard", 
+			[".storyboard"] = "file.storyboard",
 			[".pch"]       = "sourcecode.c.h",
 			[".plist"]     = "text.plist.xml",
 			[".strings"]   = "text.plist.strings",
@@ -275,7 +275,7 @@
 
 --
 -- Return a unique file name for a project. Since Xcode uses .xcodeproj's to
--- represent both solutions and projects there is a likely change of a name
+-- represent both workspaces and projects there is a likely change of a name
 -- collision. Tack on a number to differentiate them.
 --
 -- @param prj
@@ -285,7 +285,7 @@
 --
 
 	function xcode.getxcodeprojname(prj)
-		-- if there is a solution with matching name, then use "projectname1.xcodeproj"
+		-- if there is a workspace with matching name, then use "projectname1.xcodeproj"
 		-- just get something working for now
 		local fname = premake.filename(prj, ".xcodeproj")
 		return fname
@@ -314,6 +314,7 @@
 
 	function xcode.newid(...)
 		local name = ''
+		local arg = {...}
 		for i, v in pairs(arg) do
 			name = name..v..'****'
 		end
@@ -324,18 +325,18 @@
 
 
 --
--- Create a product tree node and all projects in a solution; assigning IDs
+-- Create a product tree node and all projects in a workspace; assigning IDs
 -- that are needed for inter-project dependencies.
 --
--- @param sln
---    The solution to prepare.
+-- @param wks
+--    The workspace to prepare.
 --
 
-	function xcode.preparesolution(sln)
+	function xcode.prepareWorkspace(wks)
 		-- create and cache a list of supported platforms
-		sln.xcode = { }
+		wks.xcode = { }
 
-		for prj in premake.solution.eachproject(sln) do
+		for prj in premake.workspace.eachproject(wks) do
 			-- need a configuration to get the target information
 			local cfg = project.getconfig(prj, prj.configurations[1], prj.platforms[1])
 
@@ -883,7 +884,7 @@
 
 		settings['ALWAYS_SEARCH_USER_PATHS'] = 'NO'
 
-		if not cfg.flags.Symbols then
+		if not (cfg.symbols == p.ON) then
 			settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
 		end
 
@@ -982,7 +983,7 @@
 
 		settings['CONFIGURATION_TEMP_DIR'] = '$(OBJROOT)'
 
-		if cfg.flags.Symbols then
+		if cfg.symbols == p.ON then
 			settings['COPY_PHASE_STRIP'] = 'NO'
 		end
 
@@ -996,7 +997,7 @@
 			settings['GCC_ENABLE_CPP_RTTI'] = 'NO'
 		end
 
-		if cfg.flags.Symbols and not cfg.flags.NoEditAndContinue then
+		if cfg.symbols == p.ON and not cfg.flags.NoEditAndContinue then
 			settings['GCC_ENABLE_FIX_AND_CONTINUE'] = 'YES'
 		end
 
@@ -1027,12 +1028,17 @@
 		for i,v in ipairs(includedirs) do
 			cfg.includedirs[i] = premake.quoted(v)
 		end
-		settings['USER_HEADER_SEARCH_PATHS'] = cfg.includedirs
+		settings['HEADER_SEARCH_PATHS'] = table.join(cfg.includedirs, cfg.sysincludedirs)
 
 		for i,v in ipairs(cfg.libdirs) do
 			cfg.libdirs[i] = premake.project.getrelative(cfg.project, cfg.libdirs[i])
 		end
 		settings['LIBRARY_SEARCH_PATHS'] = cfg.libdirs
+
+		for i,v in ipairs(cfg.frameworkdirs) do
+			cfg.frameworkdirs[i] = premake.project.getrelative(cfg.project, cfg.frameworkdirs[i])
+		end
+		settings['FRAMEWORK_SEARCH_PATHS'] = cfg.frameworkdirs
 
 		local objDir = path.getrelative(tr.project.location, cfg.objdir)
 		settings['OBJROOT'] = objDir
@@ -1134,7 +1140,7 @@
 
 
 	function xcode.XCBuildConfigurationList(tr)
-		local sln = tr.project.solution
+		local wks = tr.project.workspace
 		local defaultCfgName = stringifySetting(tr.configs[1].buildcfg)
 		local settings = {}
 

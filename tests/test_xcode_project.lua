@@ -12,7 +12,7 @@
 -- Setup/Teardown
 ---------------------------------------------------------------------------
 
-	local tr, sln
+	local tr, wks
 
 	function suite.teardown()
 		tr = nil
@@ -23,13 +23,13 @@
 		_ACTION = "xcode4"
 		premake.eol("\n")
 		xcode.used_ids = { } -- reset the list of generated IDs
-		sln = test.createsolution()
+		wks = test.createWorkspace()
 	end
 
 	local function prepare()
-		sln = premake.oven.bakeSolution(sln)
-		xcode.preparesolution(sln)
-		local prj = premake.solution.getproject(sln, 1)
+		wks = premake.oven.bakeWorkspace(wks)
+		xcode.prepareWorkspace(wks)
+		local prj = test.getproject(wks, 1)
 		tr = xcode.buildprjtree(prj)
 	end
 
@@ -1012,7 +1012,7 @@
 
 
 	function suite.XCBuildConfigurationTarget_OnSymbols()
-		flags { "Symbols" }
+		symbols "On"
 		prepare()
 		xcode.XCBuildConfiguration_Target(tr, tr.products.children[1], tr.configs[1])
 		test.capture [[
@@ -1074,7 +1074,7 @@
 
 
 	function suite.XCBuildConfigurationTarget_OnMultiplePlatforms()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal32", "Universal64" }
 		prepare()
 		xcode.XCBuildConfiguration_Target(tr, tr.products.children[1], tr.configs[1])
@@ -1276,14 +1276,14 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				OBJROOT = obj/Debug;
-				ONLY_ACTIVE_ARCH = NO;
-				SYMROOT = bin/Debug;
-				USER_HEADER_SEARCH_PATHS = (
+				HEADER_SEARCH_PATHS = (
 					../include,
 					../libs,
 					"\"../name with spaces\"",
 				);
+				OBJROOT = obj/Debug;
+				ONLY_ACTIVE_ARCH = NO;
+				SYMROOT = bin/Debug;
 			};
 			name = Debug;
 		};
@@ -1493,7 +1493,8 @@
 
 
 	function suite.XCBuildConfigurationProject_OnNoEditAndContinue()
-		flags { "Symbols", "NoEditAndContinue" }
+		flags { "NoEditAndContinue" }
+		symbols "On"
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
 		test.capture [[
@@ -1631,7 +1632,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnSymbols()
-		flags { "Symbols" }
+		symbols "On"
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
 		test.capture [[
@@ -1717,7 +1718,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnUniversal()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1744,7 +1745,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnUniversal32()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal32" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1771,7 +1772,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnUniversal64()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal64" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1798,7 +1799,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnNative()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Native" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1825,7 +1826,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnX86()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "x86" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1852,7 +1853,7 @@
 
 
 	function suite.XCBuildConfigurationProject_OnX86_64()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "x86_64" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1878,7 +1879,7 @@
 	end
 
 	function suite.XCBuildConfigurationProject_OnMultiplePlatforms()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal32", "Universal64" }
 		prepare()
 		xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
@@ -1966,7 +1967,7 @@
 
 
 	function suite.XCBuildConfigurationList_OnMultiplePlatforms()
-		solution("MySolution")
+		workspace("MyWorkspace")
 		platforms { "Universal32", "Universal64" }
 		prepare()
 		xcode.XCBuildConfigurationList(tr)
@@ -2022,7 +2023,7 @@ function suite.releaseBuild_onlyDefaultArch_equalsNo()
 end
 
 function suite.debugBuild_onlyDefaultArch_equalsYes()
-	flags { "Symbols" }
+	symbols "On"
 	prepare()
 	xcode.XCBuildConfiguration_Project(tr, tr.configs[1])
 
